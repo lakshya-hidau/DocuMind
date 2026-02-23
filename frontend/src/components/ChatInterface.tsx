@@ -1,6 +1,7 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import MessageBubble from "./MessageBubble";
+import { API_BASE } from "@/config";
 
 interface ChatInterfaceProps {
     sessionId: string;
@@ -92,7 +93,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ sessionId }) => {
         ]);
 
         try {
-            const response = await fetch("http://localhost:8000/chat/stream", {
+            const response = await fetch(`${API_BASE}/chat/stream`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

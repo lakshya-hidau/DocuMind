@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import uuid
+import os
 import logging
 
 from backend.rag_engine import RAGEngine
@@ -14,13 +15,25 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --------------------------------------------------
+# CORS Origins — comma-separated env var
+# e.g. ALLOWED_ORIGINS="http://localhost:5173,https://yourdomain.com"
+# Defaults to "*" for local development
+# --------------------------------------------------
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+# --------------------------------------------------
 # App Init
 # --------------------------------------------------
-app = FastAPI(title="RAG Q&A API", version="1.0.0")
+app = FastAPI(
+    title="DocuMind RAG Q&A API",
+    description="AI-powered document Q&A backend using RAG + HuggingFace LLM.",
+    version="1.0.0",
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # change in production
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -55,7 +68,12 @@ class TextRequest(BaseModel):
 # --------------------------------------------------
 @app.get("/")
 def root():
-    return {"message": "RAG Q&A API is running 🚀"}
+    return {"message": "DocuMind RAG Q&A API is running 🚀"}
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for Docker and load balancers."""
+    return {"status": "ok"}
 
 # ---------------------------
 # Process URL
@@ -106,7 +124,7 @@ async def process_file(file: UploadFile = File(...)):
     elif filename.endswith(".txt"):
         input_type = "TXT"
     else:
-        raise HTTPException(status_code=400, detail="Unsupported file type")
+        raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF, DOCX, or TXT.")
 
     try:
         content = await file.read()

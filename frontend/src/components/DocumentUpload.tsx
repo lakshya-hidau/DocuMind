@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Upload, Link, FileText, Loader2, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE } from '@/config';
 
 interface DocumentUploadProps {
     onSessionCreated: (sessionId: string, name: string, type: 'file' | 'url' | 'text', content: File | string) => void;
@@ -47,7 +48,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSessionCreated }) => 
         formData.append("file", file);
 
         try {
-            const response = await axios.post('http://localhost:8000/process/file', formData, {
+            const response = await axios.post(`${API_BASE}/process/file`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -67,7 +68,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSessionCreated }) => 
         setError('');
 
         try {
-            const response = await axios.post('http://localhost:8000/process/url', { url });
+            const response = await axios.post(`${API_BASE}/process/url`, { url });
             onSessionCreated(response.data.session_id, url, 'url', url);
         } catch (err: any) {
             setError(err.response?.data?.detail || "Failed to process URL");
@@ -83,7 +84,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onSessionCreated }) => 
         setError('');
 
         try {
-            const response = await axios.post('http://localhost:8000/process/text', { text });
+            const response = await axios.post(`${API_BASE}/process/text`, { text });
             onSessionCreated(response.data.session_id, 'Raw Text Input', 'text', text);
         } catch (err: any) {
             setError(err.response?.data?.detail || "Failed to process text");

@@ -14,18 +14,29 @@ __pycache__/
 venv/
 ENV/
 env/
-.env
 .conda/
 .RagQASystem/
+
+# Environment files — never commit real secrets
+.env
+backend/.env
+frontend/.env
+
+# .env.production is safe to commit (no secrets, just a URL placeholder)
+# frontend/.env.production  <-- intentionally NOT ignored
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Project specific
+# Editors
 .vscode/
 .idea/
+
+# Logs
 *.log
+error.log
+
+# Project specific
 demo/.conda/
 demo/.RagQASystem/
-

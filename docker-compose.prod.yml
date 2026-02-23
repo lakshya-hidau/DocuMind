@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.prod.yml  ──  PRODUCTION DEPLOYMENT
+#
+# Builds and runs both backend + frontend (nginx).
+# Frontend serves on port 80; backend is internal on port 8001.
+#
+# Usage:
+#   # Build with your real API URL baked into the frontend:
+#   VITE_API_URL=https://your-api-domain.com docker-compose -f docker-compose.prod.yml up --build -d
+#
+# Or set VITE_API_URL in a root .env file and just run:
+#   docker-compose -f docker-compose.prod.yml up --build -d
+# ─────────────────────────────────────────────────────────────────────────────
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: documind-backend-prod
+    expose:
+      - "8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      # Allow requests from the frontend container (nginx) and your real domain
+      - ALLOWED_ORIGINS=${FRONTEND_ORIGIN:-https://your-frontend-domain.com}
+    restart: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        # Bake the API URL into the static build at build time
+        VITE_API_URL: ${VITE_API_URL:-https://your-api-domain.com}
+    container_name: documind-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+
+networks:
+  default:
+    name: documind-network

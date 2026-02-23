@@ -15,12 +15,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # --------------------------------------------------
-# CORS Origins — comma-separated env var
-# e.g. ALLOWED_ORIGINS="http://localhost:5173,https://yourdomain.com"
-# Defaults to "*" for local development
+# CORS Origins
 # --------------------------------------------------
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
 ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
+# If origins is "*", credentials must be False to avoid browser security errors
+ALLOW_CREDENTIALS = True
+if "*" in ALLOWED_ORIGINS:
+    ALLOW_CREDENTIALS = False
+    logger.warning("CORS: Origins is '*' — disabling allow_credentials for browser compatibility")
 
 # --------------------------------------------------
 # App Init
@@ -34,7 +38,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -126,16 +130,19 @@ async def process_file(file: UploadFile = File(...)):
     else:
         raise HTTPException(status_code=400, detail="Unsupported file type. Please upload PDF, DOCX, or TXT.")
 
+    logger.info(f"Processing upload: {filename} (Type: {input_type}, Session: {session_id})")
     try:
         content = await file.read()
+        logger.info(f"File read successful, size: {len(content)} bytes")
         engine = get_rag_engine()
         engine.process_input(session_id, input_type, content)
+        logger.info("RAG Engine processing complete")
         return {
             "session_id": session_id,
             "message": "File processed successfully"
         }
     except Exception as e:
-        logger.exception("File processing failed")
+        logger.exception(f"File processing failed for session {session_id}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # ---------------------------
